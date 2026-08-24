@@ -26,15 +26,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Cast one chart (example birth)
+      - name: Dayun 1988-02-08 male Yin hour
+        run: python src/dayun.py 1988 2 8 4 male
+
+      - name: Cast one chart
         run: python src/cast_one.py 1988 2 8 4
 
-      - name: Run eval (sample + last 100 draws)
+      - name: Run eval (last 100)
         run: python src/eval_marksix.py --n 100 --sample 2026-08-22
-
-      - name: Upload log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eval-log
-          path: requirements.txt
