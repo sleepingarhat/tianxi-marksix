@@ -15,7 +15,6 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
-# 允許直接 python src/eval_marksix.py
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -54,7 +53,7 @@ def main() -> None:
 
     y, m, d = map(int, args.sample.split("-"))
     sample = yongshen_c(y, m, d)
-    print("=== sample", args.sample, "==="
+    print("=== sample", args.sample, "===")
     print(json.dumps(sample, ensure_ascii=False, indent=2))
 
     draws = load_draws(args.data, None if args.data else args.url)[-args.n :]
@@ -76,7 +75,8 @@ def main() -> None:
     print("pattern 分佈:")
     for k, v in pat.most_common():
         print(f"  {k}: {v}")
-    print(f"用神池蓋正碼: {hit}/{total} = {hit / total * 100:.1f}%")
+    rate = (hit / total * 100) if total else 0.0
+    print(f"用神池蓋正碼: {hit}/{total} = {rate:.1f}%")
     print("(對照：舊簡表喜用約 40%；隨機兩行約 40%)")
 
 
