@@ -21,5 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Top hits detail
-        run: python src/eval_top_hits.py --personal 1988-02-08T04:00 --n 100
+      - name: Qimen sample (zhirun)
+        run: python src/personal_x_draw_qimen.py --personal 1988-02-08T04:00 --draw 2026-08-22
+      - name: Two-group 100-period
+        run: python src/eval_two_groups.py --personal 1988-02-08T04:00 --n 100
