@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-"""兩組回測近 N 期
+"""兩組回測近 N 期（含 5 / 5.5 / ≥6 統計）
 
-A. 純攪珠日盤（八字／奇門，無個人）
-B. 個人盤 × 攪珠日盤（八字／奇門）
-
-用法:
-  python src/eval_two_groups.py --personal 1988-02-08T04:00 --n 100
+A. 純攪珠日盤　B. 個人×攪珠
 """
 from __future__ import annotations
 
@@ -20,11 +16,7 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from personal_x_draw_bazi import (  # noqa: E402
-    DRAW_W,
-    pillars_at,
-    score_chart,
-)
+from personal_x_draw_bazi import DRAW_W, pillars_at, score_chart  # noqa: E402
 from personal_x_draw_bazi import generate as gen_bazi_px  # noqa: E402
 from personal_x_draw_qimen import DRAW_W as Q_DRAW_W  # noqa: E402
 from personal_x_draw_qimen import add_pan_scores  # noqa: E402
@@ -46,15 +38,13 @@ def score(pred: list[int], numbers: list[int], special) -> float:
 
 def pure_bazi(dy: int, dm: int, dd: int) -> list[int]:
     scores: dict[int, float] = defaultdict(float)
-    draw = pillars_at(dy, dm, dd, 21)
-    score_chart(draw, DRAW_W, scores)
+    score_chart(pillars_at(dy, dm, dd, 21), DRAW_W, scores)
     return pick15(dict(scores))
 
 
 def pure_qimen(dy: int, dm: int, dd: int) -> list[int]:
     scores: dict[int, float] = defaultdict(float)
-    pan = cast_qimen(dy, dm, dd, 21)
-    add_pan_scores(pan, Q_DRAW_W, scores)
+    add_pan_scores(cast_qimen(dy, dm, dd, 21), Q_DRAW_W, scores)
     return pick15(dict(scores))
 
 
@@ -69,6 +59,10 @@ def parse_personal(s: str) -> tuple[int, int, int, int]:
     return y, m, d, hh
 
 
+def bucket() -> dict:
+    return {"avg": 0.0, "total": 0.0, "eq5": 0, "eq5_5": 0, "ge5": 0, "ge6": 0, "max": 0.0}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--personal", required=True)
@@ -79,13 +73,9 @@ def main() -> None:
     with urllib.request.urlopen(DEFAULT_URL, timeout=60) as resp:
         draws = json.loads(resp.read().decode("utf-8"))[-args.n :]
 
-    acc = {
-        "A_pure_bazi": 0.0,
-        "A_pure_qimen": 0.0,
-        "B_px_bazi": 0.0,
-        "B_px_qimen": 0.0,
-    }
-    ge6 = {k: 0 for k in acc}
+    keys = ["A_pure_bazi", "A_pure_qimen", "B_px_bazi", "B_px_qimen"]
+    stats = {k: bucket() for k in keys}
+    hist = {k: defaultdict(int) for k in keys}
 
     for row in draws:
         dy, dm, dd = map(int, row["date"].split("-"))
@@ -105,22 +95,37 @@ def main() -> None:
         }
         for k, pred in preds.items():
             sc = score(pred, nums, sp)
-            acc[k] += sc
-            if sc >= 6:
-                ge6[k] += 1
+            st = stats[k]
+            st["total"] += sc
+            st["max"] = max(st["max"], sc)
+            hist[k][sc] += 1
+            if sc == 5.0:
+                st["eq5"] += 1
+            if sc == 5.5:
+                st["eq5_5"] += 1
+            if sc >= 5.0:
+                st["ge5"] += 1
+            if sc >= 6.0:
+                st["ge6"] += 1
 
     n = len(draws)
+    for k in keys:
+        stats[k]["avg"] = round(stats[k]["total"] / n, 3)
+        stats[k]["total"] = round(stats[k]["total"], 1)
+        stats[k]["max"] = stats[k]["max"]
+
     out = {
         "n": n,
         "personal": args.personal,
         "group_A_pure_draw": {
-            "bazi": {"avg": round(acc["A_pure_bazi"] / n, 3), "total": round(acc["A_pure_bazi"], 1), "ge6": ge6["A_pure_bazi"]},
-            "qimen": {"avg": round(acc["A_pure_qimen"] / n, 3), "total": round(acc["A_pure_qimen"], 1), "ge6": ge6["A_pure_qimen"]},
+            "bazi": stats["A_pure_bazi"],
+            "qimen": stats["A_pure_qimen"],
         },
         "group_B_personal_x_draw": {
-            "bazi": {"avg": round(acc["B_px_bazi"] / n, 3), "total": round(acc["B_px_bazi"], 1), "ge6": ge6["B_px_bazi"]},
-            "qimen": {"avg": round(acc["B_px_qimen"] / n, 3), "total": round(acc["B_px_qimen"], 1), "ge6": ge6["B_px_qimen"]},
+            "bazi": stats["B_px_bazi"],
+            "qimen": stats["B_px_qimen"],
         },
+        "score_histogram": {k: {str(a): b for a, b in sorted(hist[k].items())} for k in keys},
         "baseline_random_expected_zheng": round(15 * 6 / 49, 3),
     }
     print(json.dumps(out, ensure_ascii=False, indent=2))
