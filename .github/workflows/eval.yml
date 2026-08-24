@@ -21,7 +21,5 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Bazi personal x draw
-        run: python src/personal_x_draw_bazi.py --personal 1988-02-08T04:00 --draw 2026-08-22
-      - name: Qimen personal x draw
-        run: python src/personal_x_draw_qimen.py --personal 1988-02-08T04:00 --draw 2026-08-22
+      - name: 100-period backtest personal x draw
+        run: python src/eval_personal_x_draw.py --personal 1988-02-08T04:00 --n 100
