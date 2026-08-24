@@ -26,6 +26,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Cast one chart (example birth)
+        run: python src/cast_one.py 1988 2 8 4
+
       - name: Run eval (sample + last 100 draws)
         run: python src/eval_marksix.py --n 100 --sample 2026-08-22
 
@@ -34,6 +37,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eval-log
-          path: |
-            # workflow log is in Actions UI; keep placeholder for future reports
-            requirements.txt
+          path: requirements.txt
