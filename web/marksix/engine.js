@@ -1,4 +1,4 @@
-/* tianxi marksix — bazi + qimen chaibu-v3 (範洪+時乾落宮) */
+/* tianxi marksix — bazi + qimen chaibu-v3 · 起局 blog/407 */
 (function (global) {
   'use strict';
   var GAN = '甲乙丙丁戊己庚辛壬癸';
@@ -7,14 +7,16 @@
   var SAN_QI = { 乙: 1, 丙: 1, 丁: 1 };
   var WX_G = { 甲: '木', 乙: '木', 丙: '火', 丁: '火', 戊: '土', 己: '土', 庚: '金', 辛: '金', 壬: '水', 癸: '水' };
   var WX_TAILS = { 水: [1, 6], 火: [2, 7], 木: [3, 8], 金: [4, 9], 土: [0, 5] };
+  /* blog/407 陽遁口訣 */
   var YANG_JU = {
     冬至: [1, 7, 4], 小寒: [2, 8, 5], 大寒: [3, 9, 6], 立春: [8, 5, 2], 雨水: [9, 6, 3],
-    驚蟄: [1, 7, 4], 惊蛰: [1, 7, 4], 春分: [3, 9, 6], 清明: [2, 8, 5], 穀雨: [3, 9, 6], 谷雨: [3, 9, 6],
+    驚蟄: [1, 7, 4], 惊蛰: [1, 7, 4], 春分: [3, 9, 6], 清明: [4, 1, 7], 穀雨: [5, 2, 8], 谷雨: [5, 2, 8],
     立夏: [4, 1, 7], 小滿: [5, 2, 8], 小满: [5, 2, 8], 芒種: [6, 3, 9], 芒种: [6, 3, 9]
   };
+  /* blog/407 陰遁口訣 */
   var YIN_JU = {
     夏至: [9, 3, 6], 小暑: [8, 2, 5], 大暑: [7, 1, 4], 立秋: [2, 5, 8], 處暑: [1, 4, 7], 处暑: [1, 4, 7],
-    白露: [9, 3, 6], 秋分: [7, 1, 4], 寒露: [8, 2, 5], 霜降: [7, 1, 4], 立冬: [6, 9, 3], 小雪: [5, 8, 2], 大雪: [4, 7, 1]
+    白露: [9, 3, 6], 秋分: [7, 1, 4], 寒露: [6, 9, 3], 霜降: [5, 8, 2], 立冬: [6, 9, 3], 小雪: [5, 8, 2], 大雪: [4, 7, 1]
   };
   var FU_ZHI_YUAN = { 子: 0, 午: 0, 卯: 0, 酉: 0, 寅: 1, 申: 1, 巳: 1, 亥: 1, 辰: 2, 戌: 2, 丑: 2, 未: 2 };
   var PALACE_XIAN = { 1: 6, 2: 8, 3: 4, 4: 5, 5: 5, 6: 1, 7: 2, 8: 7, 9: 3 };
@@ -124,9 +126,14 @@
     var ft = fuTou(y, m, d);
     var zhi = ft.gz.charAt(1);
     var yi = FU_ZHI_YUAN[zhi] != null ? FU_ZHI_YUAN[zhi] : 0;
+    var chao = ft.date < jq.jieStart;
     return {
       yang: yang, ju: table[key][yi], yuan: ['上元', '中元', '下元'][yi],
-      meta: { jie: jq.name, ju_key: key, fu_tou_gz: ft.gz, method: 'chaibu', rule: 'qimen-chaibu-v3' }
+      meta: {
+        jie: jq.name, ju_key: key, fu_tou_gz: ft.gz,
+        jie_qi: chao ? '超神' : '接氣或正授',
+        method: 'chaibu', rule: 'qimen-chaibu-v3', source: 'qimenpai.com/blog/407'
+      }
     };
   }
   function arrangeDi(yang, ju) {
@@ -219,9 +226,9 @@
     return {
       mode: 'pure_qimen', pan: pan,
       method: {
-        dingju: '拆補 v3 · 符頭地支定元 · 局取當日節氣',
-        extract: '時乾落宮字尾 + 範洪五行數（甲己子午九…）+ 宮先後天公式',
-        refs: 'qimenpai.com/blog/719 · /28 · /31',
+        dingju: '拆補 · blog/407：符頭地支定元 + 當日節氣口訣定局（不置閏）',
+        extract: '時乾落宮字尾 + 範洪五行數 + 宮先後天',
+        refs: 'qimenpai.com/blog/407 · /719 · /28 · /31',
         pick: '五段×3'
       },
       numbers: pick15(extractScores(pan, 1))
@@ -244,6 +251,6 @@
   global.TXMarkSixEngine = {
     pureBazi: pureBazi, pureQimen: pureQimen, personalBazi: personalBazi, personalQimen: personalQimen,
     pillarsAt: pillarsAt, castQimen: castQimen, scorePred: scorePred,
-    ruleVersion: 'bazi + qimen-chaibu-v3 (blog/719+28+31)'
+    ruleVersion: 'bazi + qimen-chaibu-v3 (blog/407起局 + 719/28/31取數)'
   };
 })(typeof window !== 'undefined' ? window : globalThis);
