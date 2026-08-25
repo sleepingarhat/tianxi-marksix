@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>六合彩研究 · 八字／奇門 · 天喜</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Noto+Serif+TC:wght@700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+<script src="./engine.js"></script>
+<style>
+:root{--bg:#f7f4ec;--card:#fff;--ink:#1a1a1a;--mute:#6b6560;--line:#e5dfd3;--gold:#c4a35a;--ok:#0c7a3a;--bad:#a01e28}
+*{box-sizing:border-box}body{margin:0;font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+h1{font-family:'Noto Serif TC',serif;font-size:22px;margin:8px 0 4px}
+.sub{color:var(--mute);font-size:13px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+h2 small{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--mute);font-weight:500}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{border:1px solid var(--line);background:#f0ebe3;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer}
+.tabs button.on{background:#1a1a1a;color:#f5d77a;border-color:#1a1a1a}
+label{font-size:12px;color:var(--mute);display:block;margin-bottom:4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
+.btn{background:#1a1a1a;color:#f5d77a;border:0;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px}
+.btn.sec{background:#f0ebe3;color:var(--ink);border:1px solid var(--line)}
+.nums{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.ball{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;background:#eee;border:1px solid #ccc}
+.ball.hit{outline:2px solid var(--ok);background:#e8f6ee}
+.ball.sp{outline:2px solid var(--gold)}
+.meta{font-size:12px;color:var(--mute);white-space:pre-wrap;background:#faf8f3;border-left:3px solid var(--gold);padding:8px 10px;margin:8px 0;border-radius:0 8px 8px 0}
+.table{width:100%;border-collapse:collapse;font-size:12px}
+.table th,.table td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left}
+.table th{color:var(--mute);font-weight:600}
+.score{font-family:'JetBrains Mono',monospace;font-weight:700}
+.score.hi{color:var(--ok)}
+.note{font-size:11px;color:var(--mute);margin-top:8px}
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:#faf8f3;border:1px solid var(--line);border-radius:8px;padding:10px}
+.stat .k{font-size:11px;color:var(--mute)}.stat .v{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700}
+.hidden{display:none}
+.err{color:var(--bad);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>六合彩 · 八字／奇門研究</h1>
+  <p class="sub">純術盤 · 個人混合 · 期期對比 · 近100期回測 · 非投注建議</p>
+
+  <div class="card">
+    <h2>控制台 <small>CONTROLS</small></h2>
+    <div class="row">
+      <div>
+        <label>攪珠日（預測／對比）</label>
+        <input type="date" id="drawDate">
+      </div>
+      <div>
+        <label>個人出生（可選 · 混合用）</label>
+        <input type="datetime-local" id="personalDT">
+      </div>
+    </div>
+    <div class="tabs" id="modeTabs">
+      <button type="button" data-mode="pure" class="on">純八字＋純奇門</button>
+      <button type="button" data-mode="hybrid">個人混合</button>
+      <button type="button" data-mode="backtest">100期回測</button>
+    </div>
+    <button class="btn" id="runBtn">計算</button>
+    <button class="btn sec" id="loadLatest" style="margin-left:8px">載入最近一期數據</button>
+    <p class="note" id="status"></p>
+  </div>
+
+  <div id="panelPure">
+    <div class="card">
+      <h2>① 起盤與推號說明 <small>METHOD</small></h2>
+      <div class="meta" id="methodBox">載入後顯示純八字／純奇門規則…</div>
+    </div>
+    <div class="card">
+      <h2>② 本期預測 <small>PREDICTION</small></h2>
+      <div id="predBox"><span class="note">按「計算」產生</span></div>
+    </div>
+    <div class="card">
+      <h2>③ 與官方結果對比 <small>COMPARE</small></h2>
+      <div id="cmpBox"><span class="note">若該日已有開獎會自動比對</span></div>
+    </div>
+  </div>
+
+  <div id="panelHybrid" class="hidden">
+    <div class="card">
+      <h2>個人盤 <small>NATAL</small></h2>
+      <div id="natalBox"></div>
+    </div>
+    <div class="card">
+      <h2>混合預測 15 碼 <small>HYBRID 15</small></h2>
+      <div id="hybridBox"></div>
+    </div>
+  </div>
+
+  <div id="panelBT" class="hidden">
+    <div class="card">
+      <h2>近 100 期回測 <small>PURE ONLY</small></h2>
+      <div id="btStats"></div>
+      <div style="overflow:auto;max-height:420px;margin-top:12px">
+        <table class="table" id="btTable"><thead><tr><th>日期</th><th>八字字</th><th>奇門字</th><th>官方</th></tr></thead><tbody></tbody></table>
+      </div>
+      <p class="note">回測只跑純當日盤（唔用個人），可能需 10–30 秒。</p>
+    </div>
+  </div>
+
+  <p class="note">引擎規則：<span id="ruleVer"></span> · 數據：hk-mark-six-2002-now</p>
+</div>
+<script>
+(function(){
+  var HISTORY_URL='https://raw.githubusercontent.com/sleepingarhat/hk-mark-six-2002-now/main/data/mark-six.json';
+  var LATEST_URL='https://raw.githubusercontent.com/sleepingarhat/hk-mark-six-2002-now/main/data/latest.json';
+  var mode='pure', HISTORY=[], byDate={};
+  var E=window.TXMarkSixEngine;
+  document.getElementById('ruleVer').textContent=E.ruleVersion;
+
+  function parseYMD(s){var a=s.split('-');return {y:+a[0],m:+a[1],d:+a[2]};}
+  function balls(nums, hits, sp){
+    hits=hits||[]; var hs={}; hits.forEach(function(n){hs[n]=1;});
+    return '<div class="nums">'+nums.map(function(n){
+      var c='ball'+(hs[n]?' hit':'')+(sp!=null&&n===sp?' sp':'');
+      return '<span class="'+c+'">'+n+'</span>';
+    }).join('')+'</div>';
+  }
+  function pillarsHTML(p, title){
+    return '<div><b>'+title+'</b> '+p.year+' '+p.month+' '+p.day+' '+p.hour+
+      ' · 日主 '+p.dayMaster+'（'+(p.dayMasterWx||'')+'）</div>';
+  }
+  function panHTML(pan, title){
+    var di=pan.di_pan, cells=[];
+    [4,9,2,3,5,7,8,1,6].forEach(function(p){
+      cells.push(p+':'+(di[p]||'-'));
+    });
+    return '<div><b>'+title+'</b> '+(pan.yang?'陽':'陰')+'遁'+pan.ju+'局 '+pan.yuan+
+      ' · 值符宮'+pan.zhi_fu_palace+' 原宮'+pan.zhi_fu_origin+
+      '<br><span class="note">地盤 '+cells.join(' · ')+'</span>'+
+      (pan.meta?'<br><span class="note">節氣 '+pan.meta.jie+' 起'+pan.meta.jie_start+(pan.meta.zhirun?' · 置閏':'')+'</span>':'')+
+      '</div>';
+  }
+
+  document.querySelectorAll('#modeTabs button').forEach(function(b){
+    b.onclick=function(){
+      mode=b.getAttribute('data-mode');
+      document.querySelectorAll('#modeTabs button').forEach(function(x){x.classList.toggle('on',x===b);});
+      document.getElementById('panelPure').classList.toggle('hidden', mode==='hybrid'||mode==='backtest');
+      document.getElementById('panelHybrid').classList.toggle('hidden', mode!=='hybrid');
+      document.getElementById('panelBT').classList.toggle('hidden', mode!=='backtest');
+      if(mode!=='backtest') document.getElementById('panelPure').classList.toggle('hidden', mode==='hybrid');
+      if(mode==='pure') document.getElementById('panelPure').classList.remove('hidden');
+    };
+  });
+
+  function findResult(dateStr){
+    return byDate[dateStr]||null;
+  }
+
+  function runPure(){
+    var ds=document.getElementById('drawDate').value; if(!ds){alert('請選攪珠日');return;}
+    var p=parseYMD(ds);
+    var bz=E.pureBazi(p.y,p.m,p.d), qm=E.pureQimen(p.y,p.m,p.d);
+    document.getElementById('methodBox').textContent=
+      '【純八字】\n起盤：'+bz.method.anchor+'\n權重：'+bz.method.weights+'\n收碼：'+bz.method.pick+
+      '\n\n【純奇門】\n定局：'+qm.method.dingju+'\n取數：'+qm.method.extract+'\n收碼：'+qm.method.pick;
+    var html='<div style="margin-bottom:12px">'+pillarsHTML(bz.pillars,'八字盤')+
+      balls(bz.numbers)+'<span class="note">純八字 15 碼</span></div>';
+    html+='<div>'+panHTML(qm.pan,'奇門盤')+balls(qm.numbers)+'<span class="note">純奇門 15 碼</span></div>';
+    document.getElementById('predBox').innerHTML=html;
+
+    var row=findResult(ds);
+    if(!row){ document.getElementById('cmpBox').innerHTML='<span class="note">此日暫無官方結果（或未載入歷史）。</span>'; return; }
+    var nums=row.numbers.slice(0,6), sp=row.special!=null?row.special:(row.numbers[6]||null);
+    var sb=E.scorePred(bz.numbers,nums,sp), sq=E.scorePred(qm.numbers,nums,sp);
+    document.getElementById('cmpBox').innerHTML=
+      '<div>官方：'+balls(nums.concat(sp?[sp]:[]), [], sp)+'</div>'+
+      '<div class="score '+(sb.score>=5?'hi':'')+'">八字 '+sb.score+' 字 · 中正 '+(sb.hit_zheng.join(',')||'-')+(sb.hit_special?' · 中特':'')+'</div>'+
+      balls(bz.numbers, sb.hit_zheng.concat(sb.hit_special&&sp?[sp]:[]), sp)+
+      '<div class="score '+(sq.score>=5?'hi':'')+'">奇門 '+sq.score+' 字 · 中正 '+(sq.hit_zheng.join(',')||'-')+(sq.hit_special?' · 中特':'')+'</div>'+
+      balls(qm.numbers, sq.hit_zheng.concat(sq.hit_special&&sp?[sp]:[]), sp);
+  }
+
+  function runHybrid(){
+    var ds=document.getElementById('drawDate').value;
+    var pdt=document.getElementById('personalDT').value;
+    if(!ds||!pdt){alert('請填攪珠日與個人出生時間');return;}
+    var d=parseYMD(ds);
+    var m=pdt.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2})/);
+    if(!m){alert('個人時間格式唔啱');return;}
+    var py=+m[1],pm=+m[2],pd=+m[3],ph=+m[4];
+    var pb=E.personalBazi(py,pm,pd,ph,d.y,d.m,d.d);
+    var pq=E.personalQimen(py,pm,pd,ph,d.y,d.m,d.d);
+    document.getElementById('natalBox').innerHTML=
+      pillarsHTML(pb.personal_pillars,'個人八字')+
+      pillarsHTML(pb.draw_pillars,'攪珠日八字')+
+      '<hr style="border:0;border-top:1px solid #e5dfd3;margin:10px 0">'+
+      panHTML(pq.personal,'個人奇門（出生時）')+
+      panHTML(pq.draw,'攪珠日奇門');
+    var row=findResult(ds);
+    var nums=row?row.numbers.slice(0,6):[];
+    var sp=row?(row.special!=null?row.special:row.numbers[6]):null;
+    var sb=row?E.scorePred(pb.numbers,nums,sp):null;
+    var sq=row?E.scorePred(pq.numbers,nums,sp):null;
+    document.getElementById('hybridBox').innerHTML=
+      '<div><b>八字混合 15</b>'+(sb?' · <span class="score">'+sb.score+' 字</span>':'')+'</div>'+
+      balls(pb.numbers, sb?sb.hit_zheng:[], sp)+
+      '<div style="margin-top:10px"><b>奇門混合 15</b>'+(sq?' · <span class="score">'+sq.score+' 字</span>':'')+'</div>'+
+      balls(pq.numbers, sq?sq.hit_zheng:[], sp);
+  }
+
+  function runBacktest(){
+    if(!HISTORY.length){alert('歷史未載入');return;}
+    document.getElementById('status').textContent='回測計算中…';
+    var slice=HISTORY.slice(-100);
+    var sumB=0,sumQ=0,eq5B=0,eq5Q=0,maxB=0,maxQ=0;
+    var tbody=document.querySelector('#btTable tbody'); tbody.innerHTML='';
+    var i=0;
+    function step(){
+      var batch=8;
+      for(var k=0;k<batch&&i<slice.length;k++,i++){
+        var row=slice[i], p=parseYMD(row.date);
+        var nums=row.numbers.slice(0,6), sp=row.special!=null?row.special:row.numbers[6];
+        var bz=E.pureBazi(p.y,p.m,p.d), qm=E.pureQimen(p.y,p.m,p.d);
+        var sb=E.scorePred(bz.numbers,nums,sp), sq=E.scorePred(qm.numbers,nums,sp);
+        sumB+=sb.score; sumQ+=sq.score;
+        if(sb.score>=5) eq5B++; if(sq.score>=5) eq5Q++;
+        if(sb.score>maxB) maxB=sb.score; if(sq.score>maxQ) maxQ=sq.score;
+        var tr=document.createElement('tr');
+        tr.innerHTML='<td>'+row.date+'</td><td class="score">'+sb.score+'</td><td class="score">'+sq.score+'</td><td>'+nums.join(',')+'+'+sp+'</td>';
+        tbody.appendChild(tr);
+      }
+      if(i<slice.length){ document.getElementById('status').textContent='回測 '+(i)+'/'+slice.length; setTimeout(step,0); }
+      else {
+        var n=slice.length;
+        document.getElementById('btStats').innerHTML='<div class="statgrid">'+
+          '<div class="stat"><div class="k">純八字平均</div><div class="v">'+(sumB/n).toFixed(3)+'</div></div>'+
+          '<div class="stat"><div class="k">純奇門平均</div><div class="v">'+(sumQ/n).toFixed(3)+'</div></div>'+
+          '<div class="stat"><div class="k">八字≥5期數</div><div class="v">'+eq5B+'</div></div>'+
+          '<div class="stat"><div class="k">奇門≥5期數</div><div class="v">'+eq5Q+'</div></div>'+
+          '<div class="stat"><div class="k">八字最高</div><div class="v">'+maxB+'</div></div>'+
+          '<div class="stat"><div class="k">奇門最高</div><div class="v">'+maxQ+'</div></div></div>';
+        document.getElementById('status').textContent='回測完成 n='+n;
+      }
+    }
+    step();
+  }
+
+  document.getElementById('runBtn').onclick=function(){
+    try{
+      if(mode==='pure') runPure();
+      else if(mode==='hybrid') runHybrid();
+      else runBacktest();
+    }catch(e){ document.getElementById('status').innerHTML='<span class="err">'+e.message+'</span>'; console.error(e); }
+  };
+
+  document.getElementById('loadLatest').onclick=function(){
+    fetch(LATEST_URL).then(function(r){return r.json();}).then(function(d){
+      if(d&&d.date) document.getElementById('drawDate').value=d.date.slice(0,10);
+      document.getElementById('status').textContent='已載入最近一期 '+((d&&d.draw)||'');
+    }).catch(function(){ document.getElementById('status').textContent='載入 latest 失敗'; });
+  };
+
+  fetch(HISTORY_URL).then(function(r){return r.json();}).then(function(data){
+    HISTORY=data||[];
+    HISTORY.forEach(function(row){ byDate[row.date]=row; });
+    document.getElementById('status').textContent='歷史已載入 '+HISTORY.length+' 期';
+    if(HISTORY.length) document.getElementById('drawDate').value=HISTORY[HISTORY.length-1].date;
+  }).catch(function(){ document.getElementById('status').textContent='歷史載入失敗'; });
+})();
+</script>
+</body>
+</html>
