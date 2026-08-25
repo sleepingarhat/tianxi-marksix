@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-"""時家奇門：拆補定局 + 地盤／值符 + 時乾落宮字尾取數
+"""時家奇門：拆補定局 + 時乾落宮／範洪取數
 
-rule: qimen-chaibu-v2
-定局參考：符頭地支定上中下元；交節即用本節局（不置閏）。
-取數參考：https://www.qimenpai.com/blog/719
-  - 時乾落宮字尾數為主池
-  - 地盤／宮先天後天／天干數等公式擴池
+rule: qimen-chaibu-v3
+定局：符頭地支定上中下元；交節用本節局（拆補、不置閏）
+取數參考：
+  - https://www.qimenpai.com/blog/719 時乾落宮字尾
+  - https://www.qimenpai.com/blog/28  範洪五行數、宮後天數、九星／八門量化
+  - https://www.qimenpai.com/blog/31  正確思路（以盤象為主、可量化）
 """
 from __future__ import annotations
 
@@ -48,37 +49,44 @@ YIN_JU = {
     "立冬": (6, 9, 3), "小雪": (5, 8, 2), "大雪": (4, 7, 1),
 }
 
-# 拆補：符頭地支 → 元（0上 1中 2下）
-# 子午卯酉上；寅申巳亥中；辰戌丑未下
 FU_ZHI_YUAN = {
     "子": 0, "午": 0, "卯": 0, "酉": 0,
     "寅": 1, "申": 1, "巳": 1, "亥": 1,
     "辰": 2, "戌": 2, "丑": 2, "未": 2,
 }
 
-# 後天宮數（洛書）：坎1 坤2 震3 巽4 中5 乾6 兌7 艮8 離9
 PALACE_HOUTIAN = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9}
-# 先天數（文章表：坎6 坤8 震4 巽5 乾1 兌2 艮7 離3）
 PALACE_XIAN_TIAN = {1: 6, 2: 8, 3: 4, 4: 5, 5: 5, 6: 1, 7: 2, 8: 7, 9: 3}
 
-# 各宮字尾數（奇門派彩券文）
+# blog/719 各宮字尾
 PALACE_TAILS: dict[int, list[int]] = {
-    1: [1, 6, 8],           # 坎
-    8: [4, 5, 0, 7, 8],     # 艮
-    3: [3, 8, 4],           # 震
-    4: [3, 8, 4, 5, 2],     # 巽
-    9: [2, 7, 9, 3, 1],     # 離
-    2: [5, 0, 2, 8],        # 坤
-    7: [4, 9, 2, 7, 6],     # 兌
-    6: [4, 9, 6, 7, 1],     # 乾
-    5: [5, 0],              # 中
+    1: [1, 6, 8],
+    8: [4, 5, 0, 7, 8],
+    3: [3, 8, 4],
+    4: [3, 8, 4, 5, 2],
+    9: [2, 7, 9, 3, 1],
+    2: [5, 0, 2, 8],
+    7: [4, 9, 2, 7, 6],
+    6: [4, 9, 6, 7, 1],
+    5: [5, 0],
 }
 
-# 十天干數（文：甲1/9 乙2…癸10）
-GAN_NUMS: dict[str, list[int]] = {
-    "甲": [1, 9], "乙": [2], "丙": [3], "丁": [4], "戊": [5],
-    "己": [6], "庚": [7], "辛": [8], "壬": [9], "癸": [10],
+# blog/28 範洪五行數：甲己子午九、乙庚丑未八、丙辛寅申七、丁壬卯酉六、戊癸辰戌五、巳亥四
+FAN_HONG: dict[str, int] = {
+    "甲": 9, "己": 9, "子": 9, "午": 9,
+    "乙": 8, "庚": 8, "丑": 8, "未": 8,
+    "丙": 7, "辛": 7, "寅": 7, "申": 7,
+    "丁": 6, "壬": 6, "卯": 6, "酉": 6,
+    "戊": 5, "癸": 5, "辰": 5, "戌": 5,
+    "巳": 4, "亥": 4,
 }
+
+# 九星量化（講義）
+STAR_NUM = {"蓬": 1, "芮": 2, "沖": 3, "輔": 4, "禽": 5, "心": 6, "柱": 7, "任": 8, "英": 9}
+# 八門量化
+GATE_NUM = {"休": 1, "死": 2, "傷": 3, "杜": 4, "中": 5, "開": 6, "驚": 7, "生": 8, "景": 9}
+# 九神（值符／九天／九地／太陰等）
+SHEN_NUM = {"值符": 1, "螣蛇": 2, "太陰": 8, "六合": 6, "白虎": 6, "玄武": 5, "九地": 9, "九天": 9}
 
 _JQ_CACHE: dict[tuple[int, int], date] = {}
 
@@ -156,21 +164,13 @@ def _resolve_ju_key(name: str, table: dict) -> str:
 
 
 def yuan_and_ju_chaibu(y: int, m: int, d: int) -> tuple[bool, int, str, dict]:
-    """拆補定局（v2）。
-
-    1. 當日所在節氣 → 陽／陰遁與局表
-    2. 符頭（甲／己日）地支 → 上中下元
-       子午卯酉上；寅申巳亥中；辰戌丑未下
-    3. 不置閏：超神只記錄，局仍用本節
-    """
     name, jie_start, yang = _find_current_jie(y, m, d)
     table = YANG_JU if yang else YIN_JU
     key = _resolve_ju_key(name, table)
     ft = fu_tou_date(y, m, d)
     ft_day = _solar(ft.year, ft.month, ft.day)
     ft_gz = gz_str(ft_day.getDayGZ())
-    ft_zhi = ft_gz[1]
-    yi = FU_ZHI_YUAN.get(ft_zhi, 0)
+    yi = FU_ZHI_YUAN.get(ft_gz[1], 0)
     yuan = ["上元", "中元", "下元"][yi]
     ju = table[key][yi]
     target = date(y, m, d)
@@ -184,7 +184,7 @@ def yuan_and_ju_chaibu(y: int, m: int, d: int) -> tuple[bool, int, str, dict]:
         "days_into_jie": (target - jie_start).days,
         "chao_shen": ft < jie_start,
         "method": "chaibu",
-        "rule": "qimen-chaibu-v2",
+        "rule": "qimen-chaibu-v3",
     }
     return yang, ju, yuan, meta
 
@@ -213,7 +213,6 @@ def xun_shou_yi(day_gan_zhi: str) -> str:
 
 
 def find_shi_gan_palace(di_pan: dict[int, str], hour_gan: str, yi0: str) -> int:
-    """時干落宮：甲用旬首儀，其餘找地盤天干所在宮。"""
     target = yi0 if hour_gan == "甲" else hour_gan
     for p, g in di_pan.items():
         if p != 5 and g == target:
@@ -267,67 +266,103 @@ def _norm49(x: int) -> int:
     return ((x - 1) % 49) + 1
 
 
-def _tails_to_nums(tails: list[int]) -> list[int]:
-    out: list[int] = []
-    for n in range(1, 50):
-        t = n % 10
-        if t in tails or (t == 0 and 0 in tails) or (t == 0 and 10 in tails):
+def _digit_expand(digit: int) -> list[int]:
+    """單位數擴成 1–49 同尾／同範洪檔。"""
+    d = digit % 10
+    if d == 0:
+        d = 10
+    out = []
+    for k in range(0, 5):
+        n = d + k * 10
+        if 1 <= n <= 49:
             out.append(n)
     return out
 
 
+def _tails_to_nums(tails: list[int]) -> list[int]:
+    out: list[int] = []
+    for n in range(1, 50):
+        t = n % 10
+        if t in tails or (t == 0 and 0 in tails):
+            out.append(n)
+    return out
+
+
+def _add(scores: dict[int, float], nums: list[int], w: float) -> None:
+    for n in nums:
+        if 1 <= n <= 49:
+            scores[n] += w
+
+
 def extract_scores(pan: QimenPan, weight_scale: float = 1.0) -> dict[int, float]:
-    """按奇門派彩券思路：時乾落宮字尾為主，公式擴池。"""
+    """取數 v3：時乾落宮字尾 + 範洪五行數 + 宮／公式。"""
     scores: dict[int, float] = {i: 0.0 for i in range(1, 50)}
     sgp = pan.shi_gan_palace
     di = pan.di_pan
-    hg = pan.pillars["hour"][0]
+    pillars = pan.pillars
+    hg = pillars["hour"][0]
+    hz = pillars["hour"][1]
+    dg = pillars["day"][0]
+    dz = pillars["day"][1]
 
-    # 1) 時乾落宮字尾 — 最高權
-    for n in _tails_to_nums(PALACE_TAILS.get(sgp, [1, 6])):
-        scores[n] += 4.0 * weight_scale
+    # —— 1) 時乾落宮字尾（blog/719）最高權 ——
+    _add(scores, _tails_to_nums(PALACE_TAILS.get(sgp, [1, 6])), 4.0 * weight_scale)
 
-    # 2) 值符宮字尾
-    for n in _tails_to_nums(PALACE_TAILS.get(pan.zhi_fu_palace, [])):
-        scores[n] += 2.5 * weight_scale
+    # —— 2) 值符宮字尾 ——
+    _add(scores, _tails_to_nums(PALACE_TAILS.get(pan.zhi_fu_palace, [])), 2.5 * weight_scale)
 
-    # 3) 公式：後天宮數、先天宮數、天干數、地盤干數
-    ht = PALACE_HOUTIAN.get(sgp, 5)
-    xt = PALACE_XIAN_TIAN.get(sgp, 5)
-    gnums = GAN_NUMS.get(hg, [5])
-    di_gan = di.get(sgp, "戊")
-    di_nums = GAN_NUMS.get(di_gan, [5])
+    # —— 3) 範洪五行數（blog/28）—— 時柱／日柱／地盤干 ——
+    # 時干、時支
+    for char, w in ((hg, 3.5), (hz, 3.0), (dg, 2.5), (dz, 2.0)):
+        fh = FAN_HONG.get(char)
+        if fh is not None:
+            _add(scores, _digit_expand(fh), w * weight_scale)
 
-    formula_vals = [
-        ht, xt,
-        ht + xt,
-        gnums[0],
-        di_nums[0],
-        ht + di_nums[0],
-        xt + di_nums[0],
-        ht + gnums[0],
-        xt + gnums[0],
-        pan.ju,
-        pan.ju + ht,
-        pan.zhi_fu_palace,
-        pan.zhi_fu_origin,
-    ]
-    for v in formula_vals:
-        scores[_norm49(v)] += 2.0 * weight_scale
-        scores[_norm49(v + 10)] += 1.2 * weight_scale
-        scores[_norm49(v + 20)] += 1.0 * weight_scale
-        scores[_norm49(v + 30)] += 0.8 * weight_scale
-
-    # 4) 地盤三奇六儀輔助（較低權）
+    # 地盤各宮天干範洪；時乾落宮、值符宮加重
     for palace, gan in di.items():
         if palace == 5:
             continue
-        w = 1.5 if gan in SAN_QI else 0.8
-        if palace == pan.zhi_fu_palace:
-            w += 1.0
-        for gn in GAN_NUMS.get(gan, []):
-            scores[_norm49(gn)] += w * 0.5 * weight_scale
-            scores[_norm49(gn + palace)] += w * 0.4 * weight_scale
+        fh = FAN_HONG.get(gan)
+        if fh is None:
+            continue
+        w = 1.2
+        if palace == sgp:
+            w = 3.0
+        elif palace == pan.zhi_fu_palace:
+            w = 2.5
+        elif gan in SAN_QI:
+            w = 1.8
+        _add(scores, _digit_expand(fh), w * weight_scale)
+        # 宮後天數 + 範洪
+        _add(scores, [_norm49(PALACE_HOUTIAN[palace] + fh)], 1.5 * weight_scale)
+        _add(scores, [_norm49(PALACE_XIAN_TIAN[palace] + fh)], 1.2 * weight_scale)
+
+    # —— 4) 宮後天／先天 + 局數公式 ——
+    ht = PALACE_HOUTIAN.get(sgp, 5)
+    xt = PALACE_XIAN_TIAN.get(sgp, 5)
+    for v, w in (
+        (ht, 2.0),
+        (xt, 1.8),
+        (ht + xt, 1.5),
+        (pan.ju, 1.5),
+        (pan.ju + ht, 1.4),
+        (pan.zhi_fu_palace, 1.3),
+        (pan.zhi_fu_origin, 1.2),
+        (SHEN_NUM["值符"], 1.0),
+        (SHEN_NUM["九天"], 0.9),
+        (SHEN_NUM["太陰"], 0.9),
+    ):
+        _add(scores, _digit_expand(v), w * weight_scale)
+        _add(scores, [_norm49(v), _norm49(v + 10), _norm49(v + 20)], 0.8 * weight_scale)
+
+    # —— 5) 年月柱範洪（較低）——
+    for key, w in (("year", 1.0), ("month", 1.2)):
+        gz = pillars.get(key, "")
+        if len(gz) >= 2:
+            for ch in (gz[0], gz[1]):
+                fh = FAN_HONG.get(ch)
+                if fh is not None:
+                    _add(scores, _digit_expand(fh), w * weight_scale)
 
     return scores
 
