@@ -62,7 +62,7 @@
   }
   function buildSeg(id,items,getActive,onPick){
     var box=document.getElementById(id);
-    box.innerHTML=items.map(function(it){return '<button data-v="'+it.v+'"'+(it.v===getActive()?' class="active":"')+'>'+it.label+'</button>';}).join('');
+    box.innerHTML=items.map(function(it){return '<button data-v="'+it.v+'"'+(it.v===getActive()?' class="active"':'')+'>'+it.label+'</button>';}).join('');
     box.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){onPick(b.getAttribute('data-v'));box.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');});});
   }
   function ballsHTML(nums,hits,sp){return '<div class="m6-nums">'+nums.map(function(n){return ballHit(n,hits,sp);}).join('')+'</div>';}
