@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""個人奇門 × 攪珠日奇門 → 15 碼（chaibu-v2 取數）
+"""個人奇門 × 攪珠日奇門 → 15 碼（chaibu-v3）
 
 用法:
   python src/personal_x_draw_qimen.py --personal 1988-02-08T04:00 --draw 2026-08-22
+  python src/personal_x_draw_qimen.py --draw 2026-08-22   # 純當日
 """
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ if str(ROOT) not in sys.path:
 from pick15 import pick15  # noqa: E402
 from qimen_dipan import cast_qimen, extract_scores, pan_to_dict  # noqa: E402
 
+RULE = "qimen-chaibu-v3"
+
 
 def generate(
     py: int, pm: int, pd: int, ph: int, dy: int, dm: int, dd: int
@@ -32,7 +35,7 @@ def generate(
         scores[n] += w
     numbers = pick15(dict(scores))
     return {
-        "ruleVersion": "qimen-chaibu-v2 + personal-x-draw-v1",
+        "ruleVersion": RULE + " + personal-x-draw-v1",
         "mode": "qimen_personal_x_draw",
         "personal": pan_to_dict(personal),
         "draw": pan_to_dict(draw),
@@ -45,7 +48,7 @@ def pure_draw(dy: int, dm: int, dd: int) -> dict:
     draw = cast_qimen(dy, dm, dd, 21)
     numbers = pick15(extract_scores(draw, 1.0))
     return {
-        "ruleVersion": "qimen-chaibu-v2",
+        "ruleVersion": RULE,
         "mode": "pure_qimen",
         "draw": pan_to_dict(draw),
         "numbers": numbers,
