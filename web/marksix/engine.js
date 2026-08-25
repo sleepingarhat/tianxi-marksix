@@ -1,4 +1,4 @@
-/* tianxi marksix engine — pure bazi / zhirun qimen / personal hybrid */
+/* tianxi marksix engine — pure bazi / chaibu qimen / personal hybrid */
 (function (global) {
   'use strict';
   var GAN = '甲乙丙丁戊己庚辛壬癸';
@@ -104,19 +104,37 @@
     }
     return new Date(y, m - 1, d);
   }
+  function resolveKey(name, table) {
+    if (table[name]) return name;
+    var keys = Object.keys(table);
+    for (var i = 0; i < keys.length; i++) if (keys[i].charAt(0) === name.charAt(0)) return keys[i];
+    return keys[0];
+  }
+  /** 拆補：符頭起三元；局用當日節氣表（超神不回退上一節） */
   function yuanJu(y, m, d) {
-    var jq = jieqiAround(y, m, d), name = jq.name, jieStart = jq.jieStart, yang = jq.yang;
-    var table = yang ? YANG_JU : YIN_JU, ft = fuTou(y, m, d), zhirun = false;
-    if (ft < jieStart) {
-      zhirun = true;
-      var prevDay = new Date(jieStart.getTime() - 86400000);
-      jq = jieqiAround(prevDay.getFullYear(), prevDay.getMonth() + 1, prevDay.getDate());
-      name = jq.name; jieStart = jq.jieStart; yang = jq.yang; table = yang ? YANG_JU : YIN_JU;
-    }
-    if (!table[name]) name = Object.keys(table)[0];
-    var daysInto = Math.floor((new Date(y, m - 1, d) - jieStart) / 86400000);
-    var yi = daysInto < 5 ? 0 : daysInto < 10 ? 1 : 2;
-    return { yang: yang, ju: table[name][yi], yuan: ['上元', '中元', '下元'][yi], meta: { jie: name, jie_start: jieStart.toISOString().slice(0, 10), fu_tou: ft.toISOString().slice(0, 10), zhirun: zhirun, days_into_jie: daysInto, method: 'zhirun' } };
+    var jq = jieqiAround(y, m, d);
+    var yang = jq.yang, table = yang ? YANG_JU : YIN_JU;
+    var key = resolveKey(jq.name, table);
+    var ft = fuTou(y, m, d);
+    var target = new Date(y, m - 1, d);
+    var daysFromFt = Math.floor((target - ft) / 86400000);
+    var yi = ((daysFromFt % 15) + 15) % 15;
+    yi = Math.floor(yi / 5);
+    var yuan = ['上元', '中元', '下元'][yi];
+    var ju = table[key][yi];
+    var daysInto = Math.floor((target - jq.jieStart) / 86400000);
+    return {
+      yang: yang, ju: ju, yuan: yuan,
+      meta: {
+        jie: jq.name, ju_key: key,
+        jie_start: jq.jieStart.toISOString().slice(0, 10),
+        fu_tou: ft.toISOString().slice(0, 10),
+        days_from_fu_tou: daysFromFt,
+        days_into_jie: daysInto,
+        chao_shen: ft < jq.jieStart,
+        method: 'chaibu'
+      }
+    };
   }
   function arrangeDi(yang, ju) {
     var path = [1, 8, 3, 4, 9, 2, 7, 6], startIdx = path.indexOf(ju);
@@ -162,7 +180,15 @@
   function pureQimen(y, m, d) {
     var pan = castQimen(y, m, d, 21), scores = {};
     addPanScores(pan, Q_DRAW_W, scores);
-    return { mode: 'pure_qimen', pan: pan, method: { dingju: '置閏 · 節氣局數表 · 符頭超神置閏', extract: '僅地盤；值符宮3.5／原宮3／三奇2.5／其餘1.5', pick: '五段×3' }, numbers: pick15(scores) };
+    return {
+      mode: 'pure_qimen', pan: pan,
+      method: {
+        dingju: '拆補 · 符頭起三元（0–4上／5–9中／10–14下）· 局取當日節氣表',
+        extract: '僅地盤；值符宮3.5／原宮3／三奇2.5／其餘1.5',
+        pick: '五段×3'
+      },
+      numbers: pick15(scores)
+    };
   }
   function personalQimen(py, pm, pd, ph, dy, dm, dd) {
     var personal = castQimen(py, pm, pd, ph), draw = castQimen(dy, dm, dd, 21), scores = {};
@@ -180,6 +206,6 @@
   global.TXMarkSixEngine = {
     pureBazi: pureBazi, pureQimen: pureQimen, personalBazi: personalBazi, personalQimen: personalQimen,
     pillarsAt: pillarsAt, castQimen: castQimen, scorePred: scorePred,
-    ruleVersion: 'bazi-qimen-fifteen-v1 + personal-x-draw-v1 + qimen-zhirun-v1'
+    ruleVersion: 'bazi-qimen-fifteen-v1 + personal-x-draw-v1 + qimen-chaibu-v1'
   };
 })(typeof window !== 'undefined' ? window : globalThis);
