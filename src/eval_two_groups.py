@@ -18,11 +18,10 @@ if str(ROOT) not in sys.path:
 
 from personal_x_draw_bazi import DRAW_W, pillars_at, score_chart  # noqa: E402
 from personal_x_draw_bazi import generate as gen_bazi_px  # noqa: E402
-from personal_x_draw_qimen import DRAW_W as Q_DRAW_W  # noqa: E402
-from personal_x_draw_qimen import add_pan_scores  # noqa: E402
 from personal_x_draw_qimen import generate as gen_qimen_px  # noqa: E402
+from personal_x_draw_qimen import pure_draw as pure_qimen_full  # noqa: E402
 from pick15 import pick15  # noqa: E402
-from qimen_dipan import cast_qimen  # noqa: E402
+from qimen_dipan import cast_qimen, extract_scores  # noqa: E402
 
 DEFAULT_URL = (
     "https://raw.githubusercontent.com/sleepingarhat/hk-mark-six-2002-now/main/data/mark-six.json"
@@ -43,9 +42,7 @@ def pure_bazi(dy: int, dm: int, dd: int) -> list[int]:
 
 
 def pure_qimen(dy: int, dm: int, dd: int) -> list[int]:
-    scores: dict[int, float] = defaultdict(float)
-    add_pan_scores(cast_qimen(dy, dm, dd, 21), Q_DRAW_W, scores)
-    return pick15(dict(scores))
+    return pure_qimen_full(dy, dm, dd)["numbers"]
 
 
 def parse_personal(s: str) -> tuple[int, int, int, int]:
@@ -117,6 +114,7 @@ def main() -> None:
     out = {
         "n": n,
         "personal": args.personal,
+        "rule": "qimen-chaibu-v2",
         "group_A_pure_draw": {
             "bazi": stats["A_pure_bazi"],
             "qimen": stats["A_pure_qimen"],
