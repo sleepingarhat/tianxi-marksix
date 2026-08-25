@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
-"""時家奇門：拆補定局 + 地盤 + 值符（取數）
+"""時家奇門：拆補定局 + 地盤／值符 + 時乾落宮字尾取數
 
-rule: qimen-chaibu-v1
+rule: qimen-chaibu-v2
+定局參考：符頭地支定上中下元；交節即用本節局（不置閏）。
+取數參考：https://www.qimenpai.com/blog/719
+  - 時乾落宮字尾數為主池
+  - 地盤／宮先天後天／天干數等公式擴池
 """
 from __future__ import annotations
 
@@ -17,6 +21,7 @@ except ImportError as e:
 GAN = "甲乙丙丁戊己庚辛壬癸"
 ZHI = "子丑寅卯辰巳午未申酉戌亥"
 YI_ORDER = list("戊己庚辛壬癸丁丙乙")
+SAN_QI = set("乙丙丁")
 
 JQ_NAME = [
     "立春", "雨水", "驚蟄", "春分", "清明", "穀雨",
@@ -24,14 +29,12 @@ JQ_NAME = [
     "立秋", "處暑", "白露", "秋分", "寒露", "霜降",
     "立冬", "小雪", "大雪", "冬至", "小寒", "大寒",
 ]
-
 JQ_APPROX = {
     0: (2, 4), 1: (2, 19), 2: (3, 6), 3: (3, 21), 4: (4, 5), 5: (4, 20),
     6: (5, 6), 7: (5, 21), 8: (6, 6), 9: (6, 21), 10: (7, 7), 11: (7, 23),
     12: (8, 8), 13: (8, 23), 14: (9, 8), 15: (9, 23), 16: (10, 8), 17: (10, 23),
     18: (11, 7), 19: (11, 22), 20: (12, 7), 21: (12, 22), 22: (1, 6), 23: (1, 20),
 }
-
 YANG_JU = {
     "冬至": (1, 7, 4), "小寒": (2, 8, 5), "大寒": (3, 9, 6),
     "立春": (8, 5, 2), "雨水": (9, 6, 3), "驚蟄": (1, 7, 4),
@@ -45,12 +48,36 @@ YIN_JU = {
     "立冬": (6, 9, 3), "小雪": (5, 8, 2), "大雪": (4, 7, 1),
 }
 
-# 中氣名 → 併入同氣段可用局表鍵（拆補以節氣局為主時）
-ZHONG_TO_JIE = {
-    "雨水": "雨水", "春分": "春分", "穀雨": "穀雨", "谷雨": "穀雨",
-    "小滿": "小滿", "小满": "小滿", "夏至": "夏至", "大暑": "大暑",
-    "處暑": "處暑", "处暑": "處暑", "秋分": "秋分", "霜降": "霜降",
-    "小雪": "小雪", "冬至": "冬至", "大寒": "大寒",
+# 拆補：符頭地支 → 元（0上 1中 2下）
+# 子午卯酉上；寅申巳亥中；辰戌丑未下
+FU_ZHI_YUAN = {
+    "子": 0, "午": 0, "卯": 0, "酉": 0,
+    "寅": 1, "申": 1, "巳": 1, "亥": 1,
+    "辰": 2, "戌": 2, "丑": 2, "未": 2,
+}
+
+# 後天宮數（洛書）：坎1 坤2 震3 巽4 中5 乾6 兌7 艮8 離9
+PALACE_HOUTIAN = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9}
+# 先天數（文章表：坎6 坤8 震4 巽5 乾1 兌2 艮7 離3）
+PALACE_XIAN_TIAN = {1: 6, 2: 8, 3: 4, 4: 5, 5: 5, 6: 1, 7: 2, 8: 7, 9: 3}
+
+# 各宮字尾數（奇門派彩券文）
+PALACE_TAILS: dict[int, list[int]] = {
+    1: [1, 6, 8],           # 坎
+    8: [4, 5, 0, 7, 8],     # 艮
+    3: [3, 8, 4],           # 震
+    4: [3, 8, 4, 5, 2],     # 巽
+    9: [2, 7, 9, 3, 1],     # 離
+    2: [5, 0, 2, 8],        # 坤
+    7: [4, 9, 2, 7, 6],     # 兌
+    6: [4, 9, 6, 7, 1],     # 乾
+    5: [5, 0],              # 中
+}
+
+# 十天干數（文：甲1/9 乙2…癸10）
+GAN_NUMS: dict[str, list[int]] = {
+    "甲": [1, 9], "乙": [2], "丙": [3], "丁": [4], "戊": [5],
+    "己": [6], "庚": [7], "辛": [8], "壬": [9], "癸": [10],
 }
 
 _JQ_CACHE: dict[tuple[int, int], date] = {}
@@ -112,7 +139,6 @@ def _find_current_jie(y: int, m: int, d: int) -> tuple[str, date, bool]:
 
 
 def fu_tou_date(y: int, m: int, d: int) -> date:
-    """往前含當日最近甲／己日（符頭）。"""
     for back in range(0, 15):
         dt = date(y, m, d) - timedelta(days=back)
         if _solar(dt.year, dt.month, dt.day).getDayGZ().tg in (0, 5):
@@ -123,8 +149,6 @@ def fu_tou_date(y: int, m: int, d: int) -> date:
 def _resolve_ju_key(name: str, table: dict) -> str:
     if name in table:
         return name
-    if name in ZHONG_TO_JIE and ZHONG_TO_JIE[name] in table:
-        return ZHONG_TO_JIE[name]
     for k in table:
         if k[0] == name[0]:
             return k
@@ -132,32 +156,35 @@ def _resolve_ju_key(name: str, table: dict) -> str:
 
 
 def yuan_and_ju_chaibu(y: int, m: int, d: int) -> tuple[bool, int, str, dict]:
-    """拆補定局。
+    """拆補定局（v2）。
 
-    - 符頭起算三元：距符頭 0–4 上元、5–9 中元、10–14 下元（每 15 日一輪）
-    - 局數取「當日所在節氣」對應陽／陰遁局表（不因超神回退上一節＝非置閏）
-    - 超神／接氣只記入 meta，供核對
+    1. 當日所在節氣 → 陽／陰遁與局表
+    2. 符頭（甲／己日）地支 → 上中下元
+       子午卯酉上；寅申巳亥中；辰戌丑未下
+    3. 不置閏：超神只記錄，局仍用本節
     """
     name, jie_start, yang = _find_current_jie(y, m, d)
     table = YANG_JU if yang else YIN_JU
     key = _resolve_ju_key(name, table)
     ft = fu_tou_date(y, m, d)
-    target = date(y, m, d)
-    days_from_ft = (target - ft).days
-    yi = (days_from_ft % 15) // 5
+    ft_day = _solar(ft.year, ft.month, ft.day)
+    ft_gz = gz_str(ft_day.getDayGZ())
+    ft_zhi = ft_gz[1]
+    yi = FU_ZHI_YUAN.get(ft_zhi, 0)
     yuan = ["上元", "中元", "下元"][yi]
     ju = table[key][yi]
-    days_into_jie = (target - jie_start).days
-    chao_shen = ft < jie_start  # 符頭在節前＝超神（拆補仍用當日節局表）
+    target = date(y, m, d)
     meta = {
         "jie": name,
         "ju_key": key,
         "jie_start": str(jie_start),
         "fu_tou": str(ft),
-        "days_from_fu_tou": days_from_ft,
-        "days_into_jie": days_into_jie,
-        "chao_shen": chao_shen,
+        "fu_tou_gz": ft_gz,
+        "yuan_by": "fu_tou_zhi",
+        "days_into_jie": (target - jie_start).days,
+        "chao_shen": ft < jie_start,
         "method": "chaibu",
+        "rule": "qimen-chaibu-v2",
     }
     return yang, ju, yuan, meta
 
@@ -185,6 +212,15 @@ def xun_shou_yi(day_gan_zhi: str) -> str:
     return "戊己庚辛壬癸"[idx // 10]
 
 
+def find_shi_gan_palace(di_pan: dict[int, str], hour_gan: str, yi0: str) -> int:
+    """時干落宮：甲用旬首儀，其餘找地盤天干所在宮。"""
+    target = yi0 if hour_gan == "甲" else hour_gan
+    for p, g in di_pan.items():
+        if p != 5 and g == target:
+            return p
+    return 5
+
+
 @dataclass
 class QimenPan:
     yang: bool
@@ -194,6 +230,7 @@ class QimenPan:
     di_pan: dict[int, str]
     zhi_fu_palace: int
     zhi_fu_origin: int
+    shi_gan_palace: int
     meta: dict
 
 
@@ -220,7 +257,79 @@ def cast_qimen(y: int, m: int, d: int, hour: int) -> QimenPan:
         if g == target and p != 5:
             zf = p
             break
-    return QimenPan(yang, ju, yuan, pillars, di, zf, origin, meta)
+    sgp = find_shi_gan_palace(di, hg, yi0)
+    return QimenPan(yang, ju, yuan, pillars, di, zf, origin, sgp, meta)
+
+
+def _norm49(x: int) -> int:
+    if x <= 0:
+        x = abs(x) if x != 0 else 1
+    return ((x - 1) % 49) + 1
+
+
+def _tails_to_nums(tails: list[int]) -> list[int]:
+    out: list[int] = []
+    for n in range(1, 50):
+        t = n % 10
+        if t in tails or (t == 0 and 0 in tails) or (t == 0 and 10 in tails):
+            out.append(n)
+    return out
+
+
+def extract_scores(pan: QimenPan, weight_scale: float = 1.0) -> dict[int, float]:
+    """按奇門派彩券思路：時乾落宮字尾為主，公式擴池。"""
+    scores: dict[int, float] = {i: 0.0 for i in range(1, 50)}
+    sgp = pan.shi_gan_palace
+    di = pan.di_pan
+    hg = pan.pillars["hour"][0]
+
+    # 1) 時乾落宮字尾 — 最高權
+    for n in _tails_to_nums(PALACE_TAILS.get(sgp, [1, 6])):
+        scores[n] += 4.0 * weight_scale
+
+    # 2) 值符宮字尾
+    for n in _tails_to_nums(PALACE_TAILS.get(pan.zhi_fu_palace, [])):
+        scores[n] += 2.5 * weight_scale
+
+    # 3) 公式：後天宮數、先天宮數、天干數、地盤干數
+    ht = PALACE_HOUTIAN.get(sgp, 5)
+    xt = PALACE_XIAN_TIAN.get(sgp, 5)
+    gnums = GAN_NUMS.get(hg, [5])
+    di_gan = di.get(sgp, "戊")
+    di_nums = GAN_NUMS.get(di_gan, [5])
+
+    formula_vals = [
+        ht, xt,
+        ht + xt,
+        gnums[0],
+        di_nums[0],
+        ht + di_nums[0],
+        xt + di_nums[0],
+        ht + gnums[0],
+        xt + gnums[0],
+        pan.ju,
+        pan.ju + ht,
+        pan.zhi_fu_palace,
+        pan.zhi_fu_origin,
+    ]
+    for v in formula_vals:
+        scores[_norm49(v)] += 2.0 * weight_scale
+        scores[_norm49(v + 10)] += 1.2 * weight_scale
+        scores[_norm49(v + 20)] += 1.0 * weight_scale
+        scores[_norm49(v + 30)] += 0.8 * weight_scale
+
+    # 4) 地盤三奇六儀輔助（較低權）
+    for palace, gan in di.items():
+        if palace == 5:
+            continue
+        w = 1.5 if gan in SAN_QI else 0.8
+        if palace == pan.zhi_fu_palace:
+            w += 1.0
+        for gn in GAN_NUMS.get(gan, []):
+            scores[_norm49(gn)] += w * 0.5 * weight_scale
+            scores[_norm49(gn + palace)] += w * 0.4 * weight_scale
+
+    return scores
 
 
 def pan_to_dict(p: QimenPan) -> dict[str, Any]:
@@ -232,5 +341,6 @@ def pan_to_dict(p: QimenPan) -> dict[str, Any]:
         "di_pan": {str(k): v for k, v in p.di_pan.items()},
         "zhi_fu_palace": p.zhi_fu_palace,
         "zhi_fu_origin": p.zhi_fu_origin,
+        "shi_gan_palace": p.shi_gan_palace,
         "meta": p.meta,
     }
