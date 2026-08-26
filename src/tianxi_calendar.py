@@ -53,7 +53,7 @@ SHENG = {"木": "火", "火": "土", "土": "金", "金": "水", "水": "木"}
 KE = {"木": "土", "土": "水", "水": "火", "火": "金", "金": "木"}
 
 JQ_NAMES = [
-    "冬至", "小寒", "大寒", "立春", "雨水", "驚蟾", "春分", "清明",
+    "冬至", "小寒", "大寒", "立春", "雨水", "驚蟲", "春分", "清明",
     "穀雨", "立夏", "小滿", "芒種", "夏至", "小暑", "大暑", "立秋",
     "處暑", "白露", "秋分", "寒露", "霜降", "立冬", "小雪", "大雪",
 ]
@@ -138,6 +138,24 @@ def _jie_event(day_obj: Any) -> tuple[datetime, str, int] | None:
     if idx not in JIE_INDEX:
         return None
     return jd_to_dt(day_obj.getJieQiJD()), JQ_NAMES[idx], idx
+
+
+def list_jieqi_year(year: int) -> list[dict[str, Any]]:
+    """公曆年立春起 25 個節氣（含下一年立春），時刻用交節 JD。"""
+    rows: list[dict[str, Any]] = []
+    for info in sxtwl.getJieQiByYear(int(year)):
+        idx = int(info.jqIndex) % 24
+        dt = jd_to_dt(info.jd)
+        rows.append(
+            {
+                "index": idx,
+                "name": JQ_NAMES[idx],
+                "is_jie": idx in JIE_INDEX,
+                "datetime": dt.isoformat(timespec="seconds"),
+                "jd": float(info.jd),
+            }
+        )
+    return rows
 
 
 def find_jie(birth: datetime, forward: bool) -> tuple[datetime, str]:
