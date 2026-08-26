@@ -13,11 +13,13 @@
 | **tianxi-mingpan-v1** | `src/tianxi_engine.py` | 四柱 + 格局喜用 + 大運流年 |
 | **tianxi-dayun-v2** | `src/tianxi_dayun.py` | 性別順逆、節氣分鐘起運、當運、流年 |
 | **tianxi-geju-xiyong-v1** | `src/tianxi_geju.py` | 月令定格 + 從格門檻 + 喜用忌仇表 |
+| **tianxi-jieqi-check-v1** | `src/tianxi_jieqi_check.py` | 二十四節氣交節對照（起運精度） |
 
 ```bash
 pip install -r requirements.txt
 python src/tianxi_engine.py --birth 1988-02-08T04:00 --sex male --at 2026-08-22T21:30
 python tests/test_dayun_geju.py
+python src/tianxi_jieqi_check.py 1988
 ```
 
 細則：[`docs/TIANXI_DAYUN.md`](docs/TIANXI_DAYUN.md) · [`docs/TIANXI_GEJU_XIYONG.md`](docs/TIANXI_GEJU_XIYONG.md)
@@ -61,6 +63,7 @@ src/
   tianxi_dayun.py       # 大運流年
   tianxi_geju.py        # 格局喜用
   tianxi_calendar.py    # 曆法／節氣
+  tianxi_jieqi_check.py  # 節氣對照
   personal_x_draw_bazi.py
 docs/
   TIANXI_DAYUN.md

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """天喜節氣對照 tianxi-jieqi-check-v1
 
-sxtwl.getJieQiByYear × 逐日 hasJieQi 掃描 ×（可選）tyme4py / lunar-python。
+sxtwl.getJieQiByYear x 逐日 hasJieQi 掃描 x（可選）tyme4py / lunar-python。
 用來鎖定起運所依之十二節交節制。
 """
 from __future__ import annotations
@@ -17,23 +17,22 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tianxi_calendar import (  # noqa: E402
-    JIE_INDEX,
+    JINGZHE,
     JQ_NAMES,
     find_jie,
     jd_to_dt,
     list_jieqi_year,
-    parse_dt,
 )
 
 ENGINE_ID = "tianxi-jieqi-check-v1"
-TOLERANCE_SEC = 2
+SCAN_TOLERANCE_SEC = 2
+CROSS_TOLERANCE_SEC = 60
 
-# lunar-python 用簡體節名
 _SIMP = {
-    "驚蟲": "惊蛰",
-    "穀雨": "谷雨",
-    "小滿": "小满",
-    "處暑": "处暑",
+    JINGZHE: "\u60ca\u86f0",
+    "\u7a40\u96e8": "\u8c37\u96e8",
+    "\u5c0f\u6eff": "\u5c0f\u6ee1",
+    "\u8655\u6691": "\u5904\u6691",
 }
 
 
@@ -60,8 +59,7 @@ def _tyme_table(year: int) -> dict[str, datetime]:
     except ImportError:
         return {}
     out: dict[str, datetime] = {}
-    # index 0 = 該年冬至；立春約在 index 3
-    term = SolarTerm.from_name(year, "立春")
+    term = SolarTerm.from_name(year, "\u7acb\u6625")
     for _ in range(25):
         jd = term.get_julian_day()
         st = jd.get_solar_time()
@@ -119,7 +117,6 @@ def check_year(year: int) -> dict[str, Any]:
             item["scan_delta_sec"] = d
         tdt = tyme.get(row["name"])
         if tdt is not None:
-            # tyme 可能跟下一年同名節衝突；只比較同一公曆日
             if tdt.date() == dt.date() or abs((tdt - dt).days) <= 1:
                 d = _delta_sec(dt, tdt)
                 max_tyme = max(max_tyme, d)
@@ -133,16 +130,15 @@ def check_year(year: int) -> dict[str, Any]:
             item["lunar_delta_sec"] = d
         diffs.append(item)
 
-    # 起運用的 find_jie ：1988-02-08 04:00 順=驚蟲 逆=立春
     sample_birth = datetime(year, 2, 8, 4, 0, 0) if year != 1988 else datetime(1988, 2, 8, 4, 0, 0)
     nxt, nxt_name = find_jie(sample_birth, True)
     prv, prv_name = find_jie(sample_birth, False)
     jie_ok = nxt_name in JQ_NAMES and prv_name in JQ_NAMES
-    ok = max_scan <= TOLERANCE_SEC and jie_ok
+    ok = max_scan <= SCAN_TOLERANCE_SEC and jie_ok
     if tyme:
-        ok = ok and max_tyme <= TOLERANCE_SEC
+        ok = ok and max_tyme <= CROSS_TOLERANCE_SEC
     if lunar:
-        ok = ok and max_lunar <= TOLERANCE_SEC
+        ok = ok and max_lunar <= CROSS_TOLERANCE_SEC
     return {
         "engineId": ENGINE_ID,
         "year": year,
@@ -163,7 +159,8 @@ def check_year(year: int) -> dict[str, Any]:
             "prev_jie": {"name": prv_name, "datetime": prv.isoformat(timespec="seconds")},
         },
         "ok": ok,
-        "tolerance_sec": TOLERANCE_SEC,
+        "scan_tolerance_sec": SCAN_TOLERANCE_SEC,
+        "cross_tolerance_sec": CROSS_TOLERANCE_SEC,
         "terms": diffs,
     }
 
