@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "tests/**"
       - "requirements.txt"
       - ".github/workflows/eval.yml"
 
@@ -21,6 +22,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Tianxi dayun + geju
+        run: python tests/test_dayun_geju.py
+      - name: Mingpan sample
+        run: python src/tianxi_engine.py --birth 1988-02-08T04:00 --sex male --at 2026-08-22T21:30
       - name: Qimen pure sample (chaibu-v3)
         run: python src/personal_x_draw_qimen.py --draw 2026-08-22
       - name: Qimen personal sample

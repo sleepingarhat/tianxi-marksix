@@ -1,38 +1,43 @@
 # 天喜六合彩研究（tianxi-marksix）
 
-**主路徑（現行）：最簡兩術**——四柱八字、奇門遁甲（**僅地盤取數**）。  
-目標：取代 [`tianxi-site.pages.dev/marksix`](https://tianxi-site.pages.dev/marksix/)。
+天喜命盤 + 攪珠研究工具。四柱、格局喜用、男女大運流年、奇門地盤、15 碼取數——同一倉庫。
 
 > 可重現研究工具，非投注建議。
 
 ---
 
-## 現行重點
+## 命盤引擎（新）
 
-| 功能 | 狀態 | 說明 |
+| 引擎 | 檔案 | 說明 |
 |------|------|------|
-| 攪珠日八字 → 15 碼 | 規格已有 | 日3時4 干支映射 + pick15 |
-| 攪珠日奇門地盤 → 15 碼 | 規格已有 | 拆補 + 地盤 |
-| **個人八字 × 攪珠日八字 → 15** | **已實作 v1** | `src/personal_x_draw_bazi.py` |
-| **個人奇門 × 攪珠日奇門 → 15** | 下一刀 | 見 `docs/PERSONAL_X_DRAW.md` |
-
-詳規：[`docs/PERSONAL_X_DRAW.md`](docs/PERSONAL_X_DRAW.md)
+| **tianxi-mingpan-v1** | `src/tianxi_engine.py` | 四柱 + 格局喜用 + 大運流年 |
+| **tianxi-dayun-v2** | `src/tianxi_dayun.py` | 性別順逆、節氣分鐘起運、當運、流年 |
+| **tianxi-geju-xiyong-v1** | `src/tianxi_geju.py` | 月令定格 + 從格門檻 + 喜用忌仇表 |
 
 ```bash
 pip install -r requirements.txt
-python src/personal_x_draw_bazi.py --personal 1988-02-08T04:00 --draw 2026-08-22
+python src/tianxi_engine.py --birth 1988-02-08T04:00 --sex male --at 2026-08-22T21:30
+python tests/test_dayun_geju.py
 ```
+
+細則：[`docs/TIANXI_DAYUN.md`](docs/TIANXI_DAYUN.md) · [`docs/TIANXI_GEJU_XIYONG.md`](docs/TIANXI_GEJU_XIYONG.md)
 
 ---
 
-## 已擱置（不進入正式取號）
+## 取號（未接喜用／大運）
 
-以下僅歷史／研究檔，**不作為推號依據**：
+| 功能 | 狀態 |
+|------|------|
+| 攪珠日八字 → 15 碼 | 規格已有 |
+| 攪珠日奇門地盤 → 15 碼 | 規格已有 |
+| 個人八字 × 攪珠日八字 → 15 | `personal-x-draw-v1` |
+| 個人奇門 × 攪珠日奇門 → 15 | 見 `docs/PERSONAL_X_DRAW.md` |
 
-- 滴天髓眾寡喜用引擎（`yongshen_c.py`）
-- 完整子平喜用／從格／調候升主推號
-- 大運敘事（`dayun.py`）
-- 格局 ML／知識圖譜方向
+格局喜用表同大運已鎖定，**取號權重下一刀先接**。
+
+```bash
+python src/personal_x_draw_bazi.py --personal 1988-02-08T04:00 --draw 2026-08-22
+```
 
 ---
 
@@ -41,12 +46,10 @@ python src/personal_x_draw_bazi.py --personal 1988-02-08T04:00 --draw 2026-08-22
 | 項目 | 定案 |
 |------|------|
 | 時間錨點 | 攪珠日 **21:30 HKT** |
+| 年柱 | 立春換年 |
+| 起運 | 十二節 + 分鐘折算 |
 | 每路產出 | **15** 個不重複 1–49 |
-| 分段 | 五段目標各 3；不足他段補 |
 | 計分 | 正碼 +1；特碼在池 +0.5 |
-
-`ruleVersion` 個人合參：**`personal-x-draw-v1`**  
-純當日盤仍可用規格 **`bazi-qimen-fifteen-v1`**。
 
 ---
 
@@ -54,10 +57,15 @@ python src/personal_x_draw_bazi.py --personal 1988-02-08T04:00 --draw 2026-08-22
 
 ```
 src/
-  pick15.py
-  personal_x_draw_bazi.py   # 個人八字×攪珠日
-  yongshen_c.py / dayun.py  # 擱置研究
+  tianxi_engine.py      # 總盤
+  tianxi_dayun.py       # 大運流年
+  tianxi_geju.py        # 格局喜用
+  tianxi_calendar.py    # 曆法／節氣
+  personal_x_draw_bazi.py
 docs/
+  TIANXI_DAYUN.md
+  TIANXI_GEJU_XIYONG.md
   PERSONAL_X_DRAW.md
-  ZIPING_YONGSHEN_C.md      # 擱置
+tests/
+  test_dayun_geju.py
 ```
