@@ -26,20 +26,23 @@ python src/tianxi_jieqi_check.py 1988
 
 ---
 
-## 取號（未接喜用／大運）
+## 取號
 
 | 功能 | 狀態 |
 |------|------|
-| 攪珠日八字 → 15 碼 | 規格已有 |
-| 攪珠日奇門地盤 → 15 碼 | 規格已有 |
-| 個人八字 × 攪珠日八字 → 15 | `personal-x-draw-v1` |
-| 個人奇門 × 攪珠日奇門 → 15 | 見 `docs/PERSONAL_X_DRAW.md` |
-
-格局喜用表同大運已鎖定，**取號權重下一刀先接**。
+| 攪珠日八字 → 15 碼 | 獨測，不接喜用 |
+| 攪珠日奇門地盤 → 15 碼 | 獨測，不接喜用 |
+| 個人八字 × 攪珠日八字 | `personal-x-draw-v1` 骨架 |
+| **喜用 × 當運 × 流年 × 攪珠日** | **`tianxi-xiyong-pick-v1`** |
+| 個人奇門 × 攪珠日奇門 | 見 `docs/PERSONAL_X_DRAW.md` |
 
 ```bash
 python src/personal_x_draw_bazi.py --personal 1988-02-08T04:00 --draw 2026-08-22
+python src/tianxi_xiyong_pick.py --birth 1988-02-08T04:00 --sex male --draw 2026-08-22
+python tests/test_xiyong_pick.py
 ```
+
+細則：[`docs/TIANXI_XIYONG_PICK.md`](docs/TIANXI_XIYONG_PICK.md)
 
 ---
 
@@ -64,11 +67,14 @@ src/
   tianxi_geju.py        # 格局喜用
   tianxi_calendar.py    # 曆法／節氣
   tianxi_jieqi_check.py  # 節氣對照
+  tianxi_xiyong_pick.py # 喜用取號
   personal_x_draw_bazi.py
 docs/
   TIANXI_DAYUN.md
   TIANXI_GEJU_XIYONG.md
+  TIANXI_XIYONG_PICK.md
   PERSONAL_X_DRAW.md
 tests/
   test_dayun_geju.py
+  test_xiyong_pick.py
 ```
