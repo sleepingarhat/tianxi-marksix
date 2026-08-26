@@ -44,4 +44,4 @@ python src/dayun.py 1988 2 8 4 male
 
 ## 與取號
 
-本引擎輸出結構與當運，**尚未寫入 15 碼權重**。取號仍為 `personal-x-draw-v1`。
+本引擎輸出當運／流年；15 碼權重由 `tianxi-xiyong-pick-v1` 讀呢份結構。
