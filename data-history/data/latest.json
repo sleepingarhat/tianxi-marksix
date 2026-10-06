@@ -1,0 +1,58 @@
+{
+  "id": "2026105N",
+  "draw": "26/105",
+  "date": "2026-10-03",
+  "weekday": "Sat",
+  "numbers": [
+    8,
+    23,
+    29,
+    31,
+    34,
+    43
+  ],
+  "special": 48,
+  "snowball": null,
+  "totalInvestment": "252440464",
+  "jackpot": "74078326",
+  "unitBet": 10,
+  "firstPrizeDividend": "98000000",
+  "prizes": [
+    {
+      "tier": 1,
+      "winningUnit": 30,
+      "dividend": "34136030"
+    },
+    {
+      "tier": 2,
+      "winningUnit": 60,
+      "dividend": "1573870"
+    },
+    {
+      "tier": 3,
+      "winningUnit": 4240,
+      "dividend": "59390"
+    },
+    {
+      "tier": 4,
+      "winningUnit": 9705,
+      "dividend": "9600"
+    },
+    {
+      "tier": 5,
+      "winningUnit": 217187,
+      "dividend": "640"
+    },
+    {
+      "tier": 6,
+      "winningUnit": 307930,
+      "dividend": "320"
+    },
+    {
+      "tier": 7,
+      "winningUnit": 4038785,
+      "dividend": "40"
+    }
+  ],
+  "nextDraw": null
+}
