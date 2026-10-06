@@ -1,0 +1,42 @@
+name: Update Mark Six results
+
+on:
+  schedule:
+    # Draw is 21:30 HKT; fetch starting 1 hour later.
+    # GitHub cron is UTC (HKT = UTC+8).
+    - cron: '30 14 * * *'   # 22:30 HKT — primary (draw + 1h)
+    - cron: '0 15 * * *'    # 23:00 HKT — backup if results posted late
+    - cron: '30 15 * * *'   # 23:30 HKT — final catch-up
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-marksix-history
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: data-history
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Scrape latest results
+        run: node scripts/scrape.mjs
+      - name: Commit changes if any
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "data: update Mark Six results ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push
+          else
+            echo "No new draws."
+          fi
