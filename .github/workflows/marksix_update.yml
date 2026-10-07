@@ -29,6 +29,8 @@ jobs:
           node-version: 20
       - name: Scrape latest results
         run: node scripts/scrape.mjs
+      - name: Collect dividends (每期派彩)
+        run: node scripts/dividends.mjs
       - name: Commit changes if any
         run: |
           git config user.name "github-actions[bot]"
